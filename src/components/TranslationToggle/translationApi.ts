@@ -4,10 +4,8 @@
  * Handles communication with the translation backend.
  */
 
-// Backend API URL
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://your-backend.onrender.com'
-  : 'http://localhost:8000';
+// Backend API URL - Railway backend
+const API_BASE_URL = 'https://backend-book-production-4d5a.up.railway.app';
 
 export interface TranslateRequest {
   chapterId: string;

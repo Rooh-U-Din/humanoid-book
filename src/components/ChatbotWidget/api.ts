@@ -26,10 +26,8 @@ export interface QueryResponse {
   timestamp: string;
 }
 
-// Backend API URL - change for production
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://your-backend.onrender.com'  // Update with actual Render URL
-  : 'http://localhost:8000';
+// Backend API URL - Railway backend
+const API_BASE_URL = 'https://backend-book-production-4d5a.up.railway.app';
 
 // Demo mode responses when API is unavailable
 const DEMO_RESPONSES: Record<string, string> = {

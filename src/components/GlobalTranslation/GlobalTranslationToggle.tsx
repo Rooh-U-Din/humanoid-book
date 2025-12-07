@@ -11,10 +11,8 @@ import styles from './GlobalTranslation.module.css';
 
 type Language = 'english' | 'urdu';
 
-// API Configuration
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:8000'
-  : 'https://your-backend.onrender.com';
+// API Configuration - Railway backend
+const API_BASE_URL = 'https://backend-book-production-4d5a.up.railway.app';
 
 // Storage keys
 const STORAGE_PREFIX = 'global_translation_';
