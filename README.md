@@ -427,3 +427,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with Spec-Driven Development** | Generated with Claude Code
+
