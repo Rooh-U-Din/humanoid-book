@@ -235,7 +235,13 @@ export default function GlobalTranslationToggle(): JSX.Element {
       setLanguage('urdu');
       saveLanguage(chapterId, 'urdu');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Translation failed');
+      const errorMsg = err instanceof Error ? err.message : 'Translation failed';
+      // Show friendly message for quota exceeded
+      if (errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('limit')) {
+        setError('Translation limit reached. Please wait 1 minute and try again.');
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
