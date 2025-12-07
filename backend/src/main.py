@@ -35,19 +35,19 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:8000",
-    "https://*.github.io",  # GitHub Pages
+    "https://rooh-u-din.github.io",
+    "https://Rooh-U-Din.github.io",
 ]
 
-if os.getenv("ENVIRONMENT") == "development":
-    allowed_origins.append("*")
-
+# Allow all origins for easier development/deployment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 
 # Request ID middleware

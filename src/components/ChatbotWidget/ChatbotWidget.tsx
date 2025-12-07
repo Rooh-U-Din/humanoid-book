@@ -69,7 +69,7 @@ export default function ChatbotWidget({ isOpen, onClose }: ChatbotWidgetProps): 
       let welcomeContent = 'Hi! I\'m your AI assistant for the Physical AI & Humanoid Robotics course. Ask me anything about ROS 2, Gazebo, robotics, or any topic from the book!';
 
       if (backendStatus === 'offline') {
-        welcomeContent = '⚠️ The AI backend is currently offline. Please make sure the backend server is running at localhost:8000.\n\nYou can browse the course content in the meantime!';
+        welcomeContent = '⚠️ The AI backend is currently starting up. This may take up to 30 seconds on the first request.\n\nPlease try again in a moment, or browse the course content in the meantime!';
       } else if (backendStatus === 'degraded') {
         welcomeContent = '⚡ Some AI services may be limited. I\'ll do my best to help you with your questions about Physical AI & Humanoid Robotics!';
       }
