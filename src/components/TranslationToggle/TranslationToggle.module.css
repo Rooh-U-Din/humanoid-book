@@ -1,0 +1,204 @@
+/* TranslationToggle Component Styles */
+
+.translationContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 12px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.toggleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.toggleButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.toggleButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.toggleButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.toggleButton.urduActive {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  box-shadow: 0 2px 8px rgba(17, 153, 142, 0.3);
+}
+
+.toggleButton.urduActive:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+}
+
+.icon {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fee;
+  color: #c33;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.retryButton {
+  margin-left: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c33;
+  background: white;
+  border: 1px solid #c33;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retryButton:hover {
+  background: #c33;
+  color: white;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #11998e;
+  background: rgba(17, 153, 142, 0.1);
+  border: 1px solid rgba(17, 153, 142, 0.3);
+  border-radius: 20px;
+  width: fit-content;
+}
+
+/* Dark mode support */
+[data-theme='dark'] .translationContainer {
+  background: var(--ifm-color-emphasis-100);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .error {
+  background: rgba(255, 100, 100, 0.1);
+  color: #ff8888;
+}
+
+[data-theme='dark'] .retryButton {
+  background: transparent;
+  border-color: #ff8888;
+  color: #ff8888;
+}
+
+[data-theme='dark'] .retryButton:hover {
+  background: #ff8888;
+  color: #1a1a1a;
+}
+
+[data-theme='dark'] .badge {
+  background: rgba(56, 239, 125, 0.1);
+  border-color: rgba(56, 239, 125, 0.3);
+  color: #38ef7d;
+}
+
+/* RTL support for Urdu content */
+.urduContent {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+  line-height: 2;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .translationContainer {
+    padding: 12px;
+  }
+
+  .toggleButton {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 16px;
+  }
+}
+
+/* Chapter wrapper */
+.chapterWrapper {
+  width: 100%;
+}
+
+/* Urdu text styling */
+.urduContent {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
+  line-height: 2.2;
+  font-size: 1.1em;
+}
+
+.urduContent h1,
+.urduContent h2,
+.urduContent h3,
+.urduContent h4 {
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.urduContent p {
+  margin-bottom: 1em;
+}
+
+.urduContent code {
+  direction: ltr;
+  text-align: left;
+  font-family: 'Fira Code', 'Monaco', monospace;
+}
+
+.urduContent pre {
+  direction: ltr;
+  text-align: left;
+}

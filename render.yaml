@@ -1,0 +1,33 @@
+# Render.com Deployment Configuration
+# Deploy the FastAPI backend to Render Free Tier
+
+services:
+  - type: web
+    name: physical-ai-rag-backend
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.src.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GEMINI_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: QDRANT_URL
+        sync: false  # Set in Render dashboard
+      - key: QDRANT_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: NEON_DATABASE_URL
+        sync: false  # Set in Render dashboard
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: info
+
+# Note: Free tier limitations
+# - Spins down after 15 minutes of inactivity
+# - First request after spin-down takes ~30 seconds
+# - 512 MB RAM, shared CPU
+# - Suitable for demo/development, upgrade for production
