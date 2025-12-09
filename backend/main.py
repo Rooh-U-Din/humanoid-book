@@ -14,15 +14,14 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from dotenv import load_dotenv
 from typing import Dict
-from pathlib import Path
 
-# Load environment variables from backend/.env
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(env_path)
+
+# Load environment variables
+load_dotenv()
 
 # Rate limiting storage (in-memory - use Redis for production)
 rate_limit_storage: Dict[str, list] = defaultdict(list)
-RATE_LIMIT_QUERIES = 10  # queries per minute
+RATE_LIMIT_QUERIES = 100  # queries per minute (increased for development)
 RATE_LIMIT_WINDOW = 60  # seconds
 
 app = FastAPI(
@@ -37,19 +36,19 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:8000",
-    "https://rooh-u-din.github.io",
-    "https://Rooh-U-Din.github.io",
+    "https://*.github.io",  # GitHub Pages
 ]
 
-# Allow all origins for easier development/deployment
+if os.getenv("ENVIRONMENT") == "development":
+    allowed_origins.append("*")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
-
 
 
 # Request ID middleware
@@ -175,16 +174,10 @@ async def test_endpoint():
 from api.query_routes import router as query_router
 from api.health_routes import router as health_router
 from api.translation_routes import router as translation_router
-from api.auth_routes import router as auth_router
-from api.profile_routes import router as profile_router
-from api.personalization_routes import router as personalization_router
 
 app.include_router(query_router)
 app.include_router(health_router)
 app.include_router(translation_router)
-app.include_router(auth_router)
-app.include_router(profile_router)
-app.include_router(personalization_router)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
 """
 Translation Service
 
-Handles chapter translation using Google Translate (free) with caching.
+Handles chapter translation using Gemini API with caching.
 """
 
 import hashlib
 import os
 from datetime import datetime
 from typing import Optional, Dict, Tuple
-from deep_translator import GoogleTranslator
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 from models.translation import (
@@ -25,7 +25,14 @@ class TranslationService:
     """Service for translating chapter content with caching"""
 
     def __init__(self):
-        # Google Translate is free, no API key needed
+        # Use separate API key for translation (falls back to GEMINI_API_KEY if not set)
+        self.api_key = os.getenv("TRANSLATION_API_KEY") or os.getenv("GEMINI_API_KEY")
+        if not self.api_key:
+            raise ValueError("TRANSLATION_API_KEY or GEMINI_API_KEY environment variable not set")
+
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel('gemini-2.0-flash-lite')
+
         # In-memory cache (use Redis/DB in production)
         self._translation_cache: Dict[str, ChapterTranslation] = {}
         self._user_preferences: Dict[str, UserTranslationPreference] = {}
@@ -68,9 +75,9 @@ class TranslationService:
 
         return None
 
-    def _translate_with_google(self, content: str, target_language: SupportedLanguage) -> str:
+    def _translate_with_gemini(self, content: str, target_language: SupportedLanguage) -> str:
         """
-        Translate content using Google Translate (free).
+        Translate content using Gemini API.
 
         Args:
             content: Text to translate
@@ -82,40 +89,52 @@ class TranslationService:
         if target_language == SupportedLanguage.ENGLISH:
             return content  # No translation needed
 
-        # Map language to Google Translate code
-        lang_code = "ur" if target_language == SupportedLanguage.URDU else "en"
+        language_name = "Urdu" if target_language == SupportedLanguage.URDU else target_language.value
+
+        # List of technical terms to preserve
+        preserve_terms = [
+            "ROS 2", "ROS2", "ROS 1", "ROS", "Gazebo", "NVIDIA", "Isaac", "Isaac Sim", "Isaac ROS",
+            "Unity", "Python", "C++", "Ubuntu", "Linux", "Windows", "macOS", "Docker", "Git", "GitHub",
+            "API", "SDK", "CLI", "GUI", "IDE", "JSON", "YAML", "XML", "HTML", "CSS", "JavaScript",
+            "HTTP", "HTTPS", "REST", "GraphQL", "WebSocket", "TCP", "UDP", "IP", "DDS",
+            "GPU", "CPU", "RAM", "SSD", "CUDA", "TensorRT", "PyTorch", "TensorFlow", "OpenCV",
+            "SLAM", "LIDAR", "LiDAR", "IMU", "GPS", "URDF", "SDF", "XACRO", "TF2",
+            "PCL", "MoveIt", "Nav2", "rclpy", "rclcpp", "ament", "colcon",
+            "Humble", "Iron", "Jazzy", "Noetic", "Melodic", "Foxy",
+            "VLA", "RT-1", "RT-2", "OpenVLA", "Whisper", "GPT", "LLM",
+            "FastAPI", "Uvicorn", "Pydantic", "SQLAlchemy", "Qdrant", "PostgreSQL",
+            "npm", "Node.js", "React", "Docusaurus", "TypeScript",
+        ]
+
+        prompt = f"""You are an expert Urdu translator specializing in technical and educational content about robotics and artificial intelligence.
+
+Your task: Translate the following content into high-quality, natural Urdu that reads like it was originally written in Urdu.
+
+CRITICAL RULES:
+1. DO NOT translate these technical terms (keep them in English): {', '.join(preserve_terms)}
+2. DO NOT translate:
+   - Code snippets, commands, or file paths
+   - Variable names, function names, class names
+   - URLs, email addresses
+   - Version numbers (e.g., v2.0, 3.14)
+3. DO translate:
+   - All explanatory text and descriptions
+   - Headers and section titles (but keep technical terms in English within them)
+   - Bullet points and list items
+4. Use proper Urdu grammar and sentence structure
+5. Make the translation sound natural and professional, not machine-like
+6. Preserve paragraph breaks and structure
+
+Content to translate:
+---
+{content}
+---
+
+Provide ONLY the Urdu translation. No explanations or notes."""
 
         try:
-            # deep_translator has a limit of ~5000 chars per request
-            max_chunk_size = 4500
-
-            translator = GoogleTranslator(source='en', target=lang_code)
-
-            if len(content) <= max_chunk_size:
-                return translator.translate(content)
-
-            # Split by paragraphs and translate in chunks
-            paragraphs = content.split('\n\n')
-            translated_parts = []
-            current_chunk = ""
-
-            for para in paragraphs:
-                if len(current_chunk) + len(para) + 2 <= max_chunk_size:
-                    current_chunk += para + "\n\n"
-                else:
-                    # Translate current chunk
-                    if current_chunk.strip():
-                        translated = translator.translate(current_chunk.strip())
-                        translated_parts.append(translated)
-                    current_chunk = para + "\n\n"
-
-            # Translate remaining chunk
-            if current_chunk.strip():
-                translated = translator.translate(current_chunk.strip())
-                translated_parts.append(translated)
-
-            return "\n\n".join(translated_parts)
-
+            response = self.model.generate_content(prompt)
+            return response.text
         except Exception as e:
             print(f"Translation error: {e}")
             raise RuntimeError(f"Translation failed: {str(e)}")
@@ -155,8 +174,8 @@ class TranslationService:
                 translated_at=cached.updated_at
             ), latency_ms
 
-        # Translate using Google Translate
-        translated_content = self._translate_with_google(content, target_language)
+        # Translate using Gemini
+        translated_content = self._translate_with_gemini(content, target_language)
 
         # Cache the translation
         now = datetime.utcnow()

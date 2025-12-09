@@ -77,6 +77,10 @@ const config: Config = {
           label: 'GitHub',
           position: 'right',
         },
+        {
+          type: 'custom-userButton',
+          position: 'right',
+        },
       ],
     },
     footer: {

@@ -1,0 +1,530 @@
+openapi: 3.0.3
+info:
+  title: Intelligent Personalization & Authentication API
+  description: API for user authentication, profile management, and content personalization
+  version: 1.0.0
+  contact:
+    name: Physical AI Book Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://your-backend.railway.app
+    description: Production server
+
+tags:
+  - name: Auth
+    description: User authentication endpoints
+  - name: Profile
+    description: User profile management
+  - name: Personalization
+    description: Content personalization
+  - name: Skills
+    description: Agent skill invocations
+
+paths:
+  # ============ AUTH ENDPOINTS ============
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/signin:
+    post:
+      tags: [Auth]
+      summary: Sign in with email and password
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/signout:
+    post:
+      tags: [Auth]
+      summary: Sign out current user
+      operationId: signOut
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signed out successfully"
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user info
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ PROFILE ENDPOINTS ============
+  /api/profile:
+    get:
+      tags: [Profile]
+      summary: Get current user's profile
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Profile]
+      summary: Update user profile
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profile/questionnaire:
+    post:
+      tags: [Profile]
+      summary: Submit background questionnaire
+      operationId: submitQuestionnaire
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionnaireRequest'
+      responses:
+        '200':
+          description: Questionnaire submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+
+  # ============ PERSONALIZATION ENDPOINTS ============
+  /api/personalize/chapter:
+    post:
+      tags: [Personalization]
+      summary: Personalize chapter content
+      operationId: personalizeChapter
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalizeRequest'
+      responses:
+        '200':
+          description: Personalized content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizeResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Profile not completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/personalize/status/{chapterId}:
+    get:
+      tags: [Personalization]
+      summary: Check if personalized version exists
+      operationId: getPersonalizationStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Personalization status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chapter_id:
+                    type: string
+                  has_personalized:
+                    type: boolean
+                  cached_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+
+  # ============ SKILLS ENDPOINTS ============
+  /api/skills:
+    get:
+      tags: [Skills]
+      summary: List available skills
+      operationId: listSkills
+      responses:
+        '200':
+          description: List of skills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillInfo'
+
+  /api/skills/invoke:
+    post:
+      tags: [Skills]
+      summary: Invoke an agent skill
+      operationId: invokeSkill
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequest'
+      responses:
+        '200':
+          description: Skill output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillResponse'
+        '400':
+          description: Invalid skill or input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ---- Auth Schemas ----
+    SignUpRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 8
+          example: "securePassword123"
+        name:
+          type: string
+          example: "John Doe"
+
+    SignInRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+          nullable: true
+        token:
+          type: string
+          description: JWT access token
+        profile_completed:
+          type: boolean
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ---- Profile Schemas ----
+    UserProfileRequest:
+      type: object
+      properties:
+        expertise_level:
+          $ref: '#/components/schemas/ExpertiseLevel'
+        programming_languages:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+          example: ["Python", "JavaScript", "C++"]
+        learning_goals:
+          type: string
+          maxLength: 1000
+          example: "Build autonomous robots using ROS 2"
+
+    UserProfileResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        expertise_level:
+          $ref: '#/components/schemas/ExpertiseLevel'
+        programming_languages:
+          type: array
+          items:
+            type: string
+        learning_goals:
+          type: string
+          nullable: true
+        profile_completed:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+
+    QuestionnaireRequest:
+      type: object
+      required: [expertise_level, programming_languages]
+      properties:
+        expertise_level:
+          $ref: '#/components/schemas/ExpertiseLevel'
+        programming_languages:
+          type: array
+          items:
+            type: string
+        learning_goals:
+          type: string
+        programming_experience_years:
+          type: integer
+          minimum: 0
+          maximum: 50
+        robotics_experience:
+          type: string
+          enum: [none, hobbyist, professional]
+        primary_interest:
+          type: string
+          enum: [simulation, hardware, ai, all]
+        preferred_learning_style:
+          type: string
+          enum: [examples, theory, projects]
+        time_commitment:
+          type: string
+          enum: [casual, moderate, intensive]
+
+    ExpertiseLevel:
+      type: string
+      enum: [beginner, intermediate, expert]
+
+    # ---- Personalization Schemas ----
+    PersonalizeRequest:
+      type: object
+      required: [chapter_id, content]
+      properties:
+        chapter_id:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+          maxLength: 100
+          example: "ros2-fundamentals"
+        content:
+          type: string
+          description: Original chapter content
+          minLength: 100
+
+    PersonalizeResponse:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+        personalized_content:
+          type: string
+        profile_hash:
+          type: string
+          description: Hash of profile used for caching
+        cached:
+          type: boolean
+          description: Whether content was served from cache
+        latency_ms:
+          type: integer
+          description: Processing time in milliseconds
+
+    # ---- Skills Schemas ----
+    SkillInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "code-explainer"
+        name:
+          type: string
+          example: "Explain Code"
+        description:
+          type: string
+          example: "Step-by-step breakdown of code"
+
+    SkillRequest:
+      type: object
+      required: [skill_id, input_text]
+      properties:
+        skill_id:
+          type: string
+          enum: [code-explainer, concept-simplifier, prerequisite-finder]
+        input_text:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        chapter_context:
+          type: string
+          description: Current chapter for context
+          nullable: true
+
+    SkillResponse:
+      type: object
+      properties:
+        skill_id:
+          type: string
+        output:
+          type: string
+        latency_ms:
+          type: integer
+
+    # ---- Common Schemas ----
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Invalid credentials"
+        code:
+          type: string
+          example: "AUTH_INVALID_CREDENTIALS"

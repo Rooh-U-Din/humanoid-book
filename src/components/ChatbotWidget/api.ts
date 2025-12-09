@@ -26,7 +26,7 @@ export interface QueryResponse {
   timestamp: string;
 }
 
-// Backend API URL - Railway backend
+// Backend API URL - Railway production backend
 const API_BASE_URL = 'https://backend-book-production-4d5a.up.railway.app';
 
 // Demo mode responses when API is unavailable
