@@ -2,7 +2,7 @@
  * Personalization API client
  */
 
-import { authClient } from '../../lib/auth-client';
+import { authClient } from '../auth-client';
 
 // Backend API URL - Railway production backend
 const API_BASE_URL = 'https://backend-book-production-4d5a.up.railway.app';
