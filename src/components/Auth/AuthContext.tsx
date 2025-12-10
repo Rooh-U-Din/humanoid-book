@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authClient, User, UserProfile } from '../../lib/auth-client';
+import { authClient, User, UserProfile } from '../../lib/auth-client.ts';
 
 interface AuthContextType {
   user: User | null;
