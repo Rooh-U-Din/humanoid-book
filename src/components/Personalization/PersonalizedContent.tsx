@@ -16,7 +16,7 @@ interface PersonalizedContentProps {
 }
 
 export function PersonalizedContent({ chapterId, children }: PersonalizedContentProps) {
-  const { isAuthenticated, isProfileCompleted } = useAuth();
+  const { isAuthenticated, isEmailVerified, isProfileCompleted } = useAuth();
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [personalizedHtml, setPersonalizedHtml] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export function PersonalizedContent({ chapterId, children }: PersonalizedContent
     setError(null);
   }, [chapterId]);
 
-  const showToggle = isAuthenticated && isProfileCompleted;
+  const showToggle = isAuthenticated && isEmailVerified && isProfileCompleted;
 
   return (
     <div className={styles.container}>

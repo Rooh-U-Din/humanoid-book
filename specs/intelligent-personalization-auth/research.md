@@ -342,3 +342,162 @@ PREREQUISITES:
 1. Create data-model.md with final schema
 2. Create API contracts (OpenAPI spec)
 3. Create quickstart.md for development setup
+
+---
+
+## Research Update: BetterAuth Clarifications (2025-12-12)
+
+### 6. BetterAuth-FastAPI Integration Pattern
+
+**Question**: How should BetterAuth (TypeScript) integrate with FastAPI (Python) backend?
+
+**Research Findings**:
+
+BetterAuth is a TypeScript-first library. Options for Python backend integration:
+1. **Client-only**: BetterAuth runs in browser, FastAPI validates cookies directly
+2. **Separate service**: Node.js service for auth, FastAPI calls via API
+3. **Replace FastAPI**: Use Node.js/Express for full stack
+
+**Decision**: BetterAuth runs client-side in Docusaurus; FastAPI validates session cookies directly
+**Rationale**:
+- Simplest architecture, no additional service
+- BetterAuth uses signed cookies (HMAC-SHA256)
+- Shared secret allows Python to validate without calling BetterAuth
+- Cookie caching with compact encoding provides <50ms validation
+
+**Implementation Pattern**:
+```python
+# backend/src/services/session_validator.py
+import hmac
+import base64
+import json
+from datetime import datetime
+from fastapi import HTTPException, Request
+
+class BetterAuthSessionValidator:
+    def __init__(self, secret: str):
+        self.secret = secret.encode()
+
+    def validate_cookie(self, request: Request) -> dict:
+        cookie = request.cookies.get("better-auth.session")
+        if not cookie:
+            raise HTTPException(401, "No session cookie")
+
+        try:
+            # BetterAuth compact encoding: base64url payload + HMAC signature
+            payload_b64, signature_b64 = cookie.rsplit('.', 1)
+            payload_bytes = base64.urlsafe_b64decode(payload_b64 + '==')
+            signature = base64.urlsafe_b64decode(signature_b64 + '==')
+
+            # Verify HMAC-SHA256 signature
+            expected = hmac.new(self.secret, payload_bytes, 'sha256').digest()
+            if not hmac.compare_digest(signature, expected):
+                raise HTTPException(401, "Invalid session signature")
+
+            session = json.loads(payload_bytes)
+
+            # Check expiration
+            if datetime.fromisoformat(session['expiresAt']) < datetime.utcnow():
+                raise HTTPException(401, "Session expired")
+
+            return session
+        except Exception as e:
+            raise HTTPException(401, f"Invalid session: {e}")
+```
+
+**Alternatives Considered**:
+- **Separate Node.js service**: Adds complexity, latency, deployment overhead
+- **Replace FastAPI**: Would require rewriting existing backend services
+
+---
+
+### 7. Password Policy Requirements
+
+**Question**: What password policy should be enforced for BetterAuth signup?
+
+**Research Findings**:
+
+Password policy options:
+- Basic (length only): 8+ characters
+- Strong (complexity): uppercase, lowercase, number, special
+- NIST-aligned: 12+ characters, breach list checking
+
+**Decision**: Basic (minimum 8 characters, no complexity requirements)
+**Rationale**:
+- NIST SP 800-63B recommends length over complexity
+- Reduces user friction for educational platform
+- BetterAuth handles bcrypt hashing automatically
+- Can add breach checking as future enhancement
+
+**Implementation Pattern**:
+```typescript
+// src/lib/auth-client.ts
+export const authClient = createAuthClient({
+  baseURL: import.meta.env.VITE_API_URL,
+  plugins: [
+    passwordPolicy({
+      minLength: 8,
+      requireUppercase: false,
+      requireLowercase: false,
+      requireNumbers: false,
+      requireSpecial: false,
+    })
+  ]
+});
+```
+
+---
+
+### 8. Email Verification Requirement
+
+**Question**: Is email verification required before users can access personalization features?
+
+**Research Findings**:
+
+Email verification approaches:
+- Required upfront: Blocks all access until verified
+- Required for features: Allows browsing, blocks personalization
+- Optional: Trust signup email, prompt to verify
+
+**Decision**: Required before accessing personalization features
+**Rationale**:
+- Prevents abuse of LLM-based personalization (rate limit circumvention)
+- Users can still browse book content without verification
+- Ensures valid email for password reset and notifications
+- BetterAuth has built-in email verification flow
+
+**Implementation Pattern**:
+```python
+# backend/src/api/personalization_routes.py
+from fastapi import Depends, HTTPException
+
+async def require_verified_email(session: dict = Depends(get_session)):
+    if not session.get('user', {}).get('emailVerified'):
+        raise HTTPException(
+            status_code=403,
+            detail="Email verification required for personalization"
+        )
+    return session
+
+@router.post("/personalize")
+async def personalize_chapter(
+    request: PersonalizeRequest,
+    session: dict = Depends(require_verified_email)
+):
+    # Only accessible with verified email
+    ...
+```
+
+---
+
+## Updated Research Summary
+
+| Topic | Decision | Confidence | Updated |
+|-------|----------|------------|---------|
+| Auth Library | BetterAuth | High | ✓ |
+| Backend Auth | Cookie validation (shared secret) | High | 2025-12-12 |
+| Password Policy | Basic (8 chars min) | High | 2025-12-12 |
+| Email Verification | Required for personalization | High | 2025-12-12 |
+| Profile Storage | Postgres with JSON | High | |
+| Personalization | Full chapter + cache | Medium | |
+| Agent Skills | Prompt templates | High | |

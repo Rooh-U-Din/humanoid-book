@@ -340,6 +340,85 @@
   text-decoration: underline;
 }
 
+/* Login Prompt (shown to unauthenticated users) */
+.loginPromptContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.loginPromptIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.loginPromptTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ifm-heading-color);
+  margin: 0 0 12px 0;
+}
+
+.loginPromptDescription {
+  font-size: 14px;
+  color: var(--ifm-color-emphasis-600);
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+  max-width: 280px;
+}
+
+.loginPromptButton {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.loginPromptButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.loginPromptButton:active {
+  transform: scale(0.98);
+}
+
+/* Loading state for auth check */
+.loadingContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--ifm-color-emphasis-200);
+  border-top-color: var(--ifm-color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .chatbotContainer {

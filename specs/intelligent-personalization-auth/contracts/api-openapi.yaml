@@ -1,8 +1,22 @@
 openapi: 3.0.3
 info:
   title: Intelligent Personalization & Authentication API
-  description: API for user authentication, profile management, and content personalization
-  version: 1.0.0
+  description: |
+    API for user authentication, profile management, and content personalization.
+
+    ## Authentication (Updated 2025-12-12)
+    - BetterAuth handles authentication client-side in Docusaurus
+    - FastAPI validates BetterAuth session cookies using shared secret
+    - Session expiration: 7 days, refresh interval: 1 day
+    - Cookie uses compact encoding (base64url + HMAC-SHA256)
+
+    ## Email Verification (FR-026)
+    - Email verification is REQUIRED before accessing personalization endpoints
+    - Unverified users receive 403 Forbidden on /api/personalize/* endpoints
+
+    ## Password Policy (FR-025)
+    - Minimum 8 characters, no complexity requirements
+  version: 1.1.0
   contact:
     name: Physical AI Book Team
 
@@ -105,7 +119,7 @@ paths:
       summary: Get current user info
       operationId: getCurrentUser
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: Current user info
@@ -119,6 +133,104 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify user email address (FR-026)
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: Email verification token
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email verified successfully"
+                  email_verified:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Resend email verification link
+      operationId: resendVerification
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Verification email sent"
+        '400':
+          description: Email already verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/sessions:
+    get:
+      tags: [Auth]
+      summary: List active sessions (FR-021)
+      operationId: listSessions
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of active sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionInfo'
+
+  /api/auth/sessions/{sessionId}:
+    delete:
+      tags: [Auth]
+      summary: Revoke a specific session
+      operationId: revokeSession
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session revoked
+        '404':
+          description: Session not found
 
   # ============ PROFILE ENDPOINTS ============
   /api/profile:
@@ -310,12 +422,39 @@ paths:
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session
+      description: |
+        BetterAuth session cookie (compact encoding).
+        Cookie contains base64url-encoded payload + HMAC-SHA256 signature.
+        FastAPI validates using shared BETTER_AUTH_SECRET.
 
   schemas:
+    # ---- Session Schemas (Added 2025-12-12) ----
+    SessionInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_agent:
+          type: string
+          example: "Mozilla/5.0..."
+        ip_address:
+          type: string
+          example: "192.168.1.1"
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        is_current:
+          type: boolean
+          description: Whether this is the current session
+
     # ---- Auth Schemas ----
     SignUpRequest:
       type: object
@@ -371,6 +510,9 @@ components:
         name:
           type: string
           nullable: true
+        email_verified:
+          type: boolean
+          description: Whether email has been verified (FR-026)
         created_at:
           type: string
           format: date-time

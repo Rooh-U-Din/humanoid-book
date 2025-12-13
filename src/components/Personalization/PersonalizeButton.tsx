@@ -20,10 +20,10 @@ export function PersonalizeButton({
   onToggle,
   disabled = false,
 }: PersonalizeButtonProps) {
-  const { isAuthenticated, isProfileCompleted } = useAuth();
+  const { isAuthenticated, isEmailVerified, isProfileCompleted } = useAuth();
 
-  // Don't show if not authenticated or profile not completed
-  if (!isAuthenticated || !isProfileCompleted) {
+  // Don't show if not authenticated, email not verified, or profile not completed (FR-026)
+  if (!isAuthenticated || !isEmailVerified || !isProfileCompleted) {
     return null;
   }
 

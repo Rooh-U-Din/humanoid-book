@@ -1,7 +1,13 @@
 # Quickstart: Intelligent Personalization & Authentication
 
 **Feature**: intelligent-personalization-auth
-**Date**: 2025-12-09
+**Date**: 2025-12-09 (Updated: 2025-12-12)
+
+## Updates (2025-12-12)
+- BetterAuth runs client-side, FastAPI validates cookies directly (FR-027)
+- Added BETTER_AUTH_SECRET for cookie validation
+- Added email verification setup (FR-026)
+- Password policy: min 8 chars, no complexity (FR-025)
 
 ## Prerequisites
 
@@ -9,6 +15,7 @@
 - Python 3.13
 - PostgreSQL (Neon account or local)
 - Gemini API key (existing)
+- SMTP server (for email verification)
 
 ## Quick Setup
 
@@ -111,10 +118,19 @@ Add to `backend/.env`:
 GEMINI_API_KEY=your-key-here
 DATABASE_URL=postgresql://...
 
-# New for auth
-JWT_SECRET_KEY=your-secret-key-here-min-32-chars
-JWT_ALGORITHM=HS256
-JWT_EXPIRATION_HOURS=24
+# New for BetterAuth (Updated 2025-12-12)
+BETTER_AUTH_SECRET=your-secret-key-here-min-32-chars
+BETTER_AUTH_URL=http://localhost:3000
+SESSION_EXPIRES_IN=604800   # 7 days in seconds
+SESSION_UPDATE_AGE=86400    # 1 day in seconds
+
+# Email verification (FR-026)
+EMAIL_VERIFICATION_REQUIRED=true
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-user
+SMTP_PASSWORD=your-smtp-password
+SMTP_FROM=noreply@example.com
 ```
 
 Generate a secure secret:
@@ -122,6 +138,8 @@ Generate a secure secret:
 import secrets
 print(secrets.token_hex(32))
 ```
+
+**Important**: The `BETTER_AUTH_SECRET` must be the same on both frontend (BetterAuth client) and backend (FastAPI cookie validation) to properly validate session cookies.
 
 ### 5. Start Development Servers
 
@@ -240,10 +258,95 @@ Error: CORS policy blocked
 Solution: Ensure FastAPI CORS middleware allows localhost:3000
 ```
 
+## BetterAuth Client Setup (Updated 2025-12-12)
+
+Create `src/lib/auth-client.ts`:
+
+```typescript
+import { createAuthClient } from "better-auth/react";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  session: {
+    expiresIn: 7 * 24 * 60 * 60, // 7 days
+    updateAge: 24 * 60 * 60,     // 1 day
+  },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,  // FR-025
+    requireEmailVerification: true,  // FR-026
+  },
+});
+
+// Export hooks
+export const { useSession, signIn, signUp, signOut } = authClient;
+```
+
+## FastAPI Session Validation (Updated 2025-12-12)
+
+Create `backend/src/services/session_validator.py`:
+
+```python
+import hmac
+import base64
+import json
+import os
+from datetime import datetime
+from fastapi import HTTPException, Request, Depends
+
+class BetterAuthSessionValidator:
+    def __init__(self):
+        self.secret = os.getenv("BETTER_AUTH_SECRET", "").encode()
+        if len(self.secret) < 32:
+            raise ValueError("BETTER_AUTH_SECRET must be at least 32 characters")
+
+    async def validate_cookie(self, request: Request) -> dict:
+        cookie = request.cookies.get("better-auth.session")
+        if not cookie:
+            raise HTTPException(status_code=401, detail="No session cookie")
+
+        try:
+            payload_b64, signature_b64 = cookie.rsplit('.', 1)
+            payload_bytes = base64.urlsafe_b64decode(payload_b64 + '==')
+            signature = base64.urlsafe_b64decode(signature_b64 + '==')
+
+            expected = hmac.new(self.secret, payload_bytes, 'sha256').digest()
+            if not hmac.compare_digest(signature, expected):
+                raise HTTPException(status_code=401, detail="Invalid session signature")
+
+            session = json.loads(payload_bytes)
+
+            if datetime.fromisoformat(session['expiresAt'].replace('Z', '+00:00')) < datetime.now():
+                raise HTTPException(status_code=401, detail="Session expired")
+
+            return session
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Invalid session: {e}")
+
+# Dependency for protected routes
+validator = BetterAuthSessionValidator()
+
+async def get_session(request: Request) -> dict:
+    return await validator.validate_cookie(request)
+
+async def require_verified_email(session: dict = Depends(get_session)) -> dict:
+    """Dependency that requires email verification (FR-026)"""
+    if not session.get('user', {}).get('emailVerified'):
+        raise HTTPException(
+            status_code=403,
+            detail="Email verification required for this feature"
+        )
+    return session
+```
+
 ## Next Steps
 
 1. Run `/sp.tasks` to generate implementation tasks
-2. Implement Phase 1 (Authentication) first
-3. Test signup/signin flow
-4. Implement Phase 2 (Profiles)
-5. Implement Phase 3 (Personalization)
+2. Implement Phase 1 (BetterAuth Setup) first
+3. Implement Phase 2 (Session & Cookie Validation)
+4. Implement Phase 3 (Email Verification)
+5. Implement Phase 4 (User Profiles)
+6. Implement Phase 5 (Personalization)
+7. Implement Phase 6 (Agent Skills)

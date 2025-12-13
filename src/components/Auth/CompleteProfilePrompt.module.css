@@ -1,0 +1,78 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-color-info-lightest, #cfe2ff);
+  border: 1px solid var(--ifm-color-info-light, #6ea8fe);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  background: var(--ifm-card-background-color);
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-gray-200);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--ifm-color-info-dark, #084298);
+}
+
+.content {
+  flex: 1;
+}
+
+.message {
+  margin: 0;
+  font-weight: 500;
+  color: var(--ifm-color-content);
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.button {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.button:hover {
+  background: var(--ifm-color-primary-dark);
+}
+
+.inline .icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ifm-color-info-lightest, #cfe2ff);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.inline .content {
+  margin-bottom: 1rem;
+}
+
+.inline .button {
+  padding: 0.75rem 1.5rem;
+}

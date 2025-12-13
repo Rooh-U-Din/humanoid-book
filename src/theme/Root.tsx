@@ -3,14 +3,13 @@
  *
  * This component wraps the entire Docusaurus site and adds:
  * - AuthProvider for user authentication
- * - Chatbot widget
+ * - Authenticated chatbot widget (requires login)
  * See: https://docusaurus.io/docs/swizzling#wrapper-your-site-with-root
  */
 
 import React, { useState } from 'react';
 import { AuthProvider } from '../components/Auth';
-import ChatbotWidget from '../components/ChatbotWidget/ChatbotWidget';
-import FloatingButton from '../components/ChatbotWidget/FloatingButton';
+import AuthenticatedChatbot from '../components/ChatbotWidget/AuthenticatedChatbot';
 
 export default function Root({ children }): JSX.Element {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -19,15 +18,11 @@ export default function Root({ children }): JSX.Element {
     <AuthProvider>
       {children}
 
-      {/* Chatbot UI */}
-      <ChatbotWidget
+      {/* Authenticated Chatbot - requires sign-in to use */}
+      <AuthenticatedChatbot
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-      />
-
-      <FloatingButton
-        isOpen={isChatOpen}
-        onClick={() => setIsChatOpen(true)}
+        onOpen={() => setIsChatOpen(true)}
       />
     </AuthProvider>
   );

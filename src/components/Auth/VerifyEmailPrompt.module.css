@@ -1,0 +1,94 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-color-warning-lightest, #fff3cd);
+  border: 1px solid var(--ifm-color-warning-light, #ffc107);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  background: var(--ifm-card-background-color);
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-gray-200);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--ifm-color-warning-dark, #856404);
+}
+
+.content {
+  flex: 1;
+}
+
+.message {
+  margin: 0;
+  font-weight: 500;
+  color: var(--ifm-color-content);
+}
+
+.email {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.success {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ifm-color-success);
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ifm-color-danger);
+}
+
+.button {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.button:hover {
+  background: var(--ifm-color-primary-dark);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inline .icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ifm-color-warning-lightest, #fff3cd);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.inline .content {
+  margin-bottom: 1rem;
+}
+
+.inline .button {
+  padding: 0.75rem 1.5rem;
+}

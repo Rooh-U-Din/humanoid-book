@@ -48,7 +48,17 @@ function getDemoResponse(query: string): string {
 }
 
 /**
- * Send a query to the chatbot
+ * Authentication error class for 401 responses
+ */
+export class AuthenticationError extends Error {
+  constructor(message: string = 'Authentication required') {
+    super(message);
+    this.name = 'AuthenticationError';
+  }
+}
+
+/**
+ * Send a query to the chatbot (requires authentication)
  */
 export async function sendQuery(
   query: string,
@@ -61,11 +71,17 @@ export async function sendQuery(
         'Content-Type': 'application/json',
         'X-Session-ID': sessionId,
       },
+      credentials: 'include', // Send cookies for authentication
       body: JSON.stringify({
         query,
         session_id: sessionId,
       }),
     });
+
+    // Handle authentication errors
+    if (response.status === 401) {
+      throw new AuthenticationError('Please sign in to use the AI assistant');
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -91,6 +107,10 @@ export async function sendQuery(
 
     return response.json();
   } catch (error) {
+    // Re-throw authentication errors
+    if (error instanceof AuthenticationError) {
+      throw error;
+    }
     // Fall back to demo mode if backend is unreachable
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return {
@@ -107,7 +127,7 @@ export async function sendQuery(
 }
 
 /**
- * Send a selection-based query
+ * Send a selection-based query (requires authentication)
  */
 export async function sendSelectionQuery(
   selectedText: string,
@@ -121,6 +141,7 @@ export async function sendSelectionQuery(
       'Content-Type': 'application/json',
       'X-Session-ID': sessionId,
     },
+    credentials: 'include', // Send cookies for authentication
     body: JSON.stringify({
       selected_text: selectedText,
       query,
@@ -128,6 +149,11 @@ export async function sendSelectionQuery(
       session_id: sessionId,
     }),
   });
+
+  // Handle authentication errors
+  if (response.status === 401) {
+    throw new AuthenticationError('Please sign in to use the AI assistant');
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));

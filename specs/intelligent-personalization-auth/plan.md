@@ -1,15 +1,21 @@
 # Implementation Plan: Intelligent Personalization & Authentication
 
-**Branch**: `intelligent-personalization-auth` | **Date**: 2025-12-09 | **Spec**: [spec.md](./spec.md)
+**Branch**: `intelligent-personalization-auth` | **Date**: 2025-12-09 (Updated: 2025-12-12) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/intelligent-personalization-auth/spec.md`
 
 ## Summary
 
-Implement a three-tier feature set for the Physical AI & Humanoid Robotics book:
-1. **Better Auth** integration for user authentication (email/password)
-2. **User Profile System** with background questionnaire and expertise tracking
-3. **Content Personalization** using Gemini API to adapt chapter content based on user profiles
-4. **Agent Skills** for reusable AI-powered content interactions
+Implement a five-tier feature set for the Physical AI & Humanoid Robotics book:
+1. **BetterAuth** integration for user authentication (email/password with email verification)
+2. **Secure Session Handling** with cookie-based tokens and automatic refresh
+3. **User Profile System** with background questionnaire and expertise tracking
+4. **Content Personalization** using Gemini API to adapt chapter content based on user profiles
+5. **Agent Skills** for reusable AI-powered content interactions
+
+### Key Clarifications (2025-12-12)
+- **Password Policy**: Minimum 8 characters, no complexity requirements (FR-025)
+- **Email Verification**: Required before accessing personalization features (FR-026)
+- **Integration Pattern**: BetterAuth runs client-side in Docusaurus; FastAPI validates session cookies directly using shared secret (FR-027)
 
 ## Technical Context
 
@@ -106,13 +112,30 @@ src/
 
 ## Architecture Decisions
 
-### AD-1: Better Auth vs Custom Auth
-**Decision**: Use Better Auth library for frontend authentication
+### AD-1: BetterAuth Integration Pattern (Updated 2025-12-12)
+**Decision**: BetterAuth runs client-side in Docusaurus; FastAPI validates session cookies directly
 **Rationale**:
-- Framework-agnostic, works with React
-- Built-in session management and cookie handling
-- No backend auth server needed (stateless JWT approach)
-- TypeScript-first with excellent DX
+- Framework-agnostic, works with React/Docusaurus
+- Built-in session management with cookie-based tokens (compact encoding)
+- FastAPI validates cookies using shared BETTER_AUTH_SECRET
+- No separate Node.js service needed
+- Session expiration: 7 days, refresh interval: 1 day
+- Cookie caching enabled for <50ms validation latency
+
+**Cookie Validation Pattern**:
+```python
+# FastAPI validates BetterAuth session cookies directly
+import hmac
+import base64
+
+def validate_session_cookie(cookie: str, secret: str) -> dict:
+    # BetterAuth compact encoding: base64url + HMAC-SHA256
+    payload, signature = cookie.rsplit('.', 1)
+    expected_sig = hmac.new(secret.encode(), payload.encode(), 'sha256').digest()
+    if not hmac.compare_digest(base64.urlsafe_b64decode(signature), expected_sig):
+        raise HTTPException(401, "Invalid session")
+    return json.loads(base64.urlsafe_b64decode(payload))
+```
 
 ### AD-2: Personalization Strategy
 **Decision**: Full chapter rewrite via Gemini API with caching
@@ -137,35 +160,70 @@ src/
 - Can achieve 80% of value with well-crafted prompts
 - Upgrade path to SDK exists if needed
 
+### AD-5: Password Policy (Added 2025-12-12)
+**Decision**: Basic password policy - minimum 8 characters, no complexity requirements
+**Rationale**:
+- Balances security with user experience
+- Aligns with modern NIST guidance favoring length over complexity
+- Reduces signup friction for educational platform
+- BetterAuth handles hashing (bcrypt)
+
+### AD-6: Email Verification Flow (Added 2025-12-12)
+**Decision**: Email verification required before accessing personalization features
+**Rationale**:
+- Prevents abuse of LLM-based personalization
+- Ensures valid contact for important notifications
+- Users can browse book content without verification
+- Verification gate only on personalization endpoints
+
 ## Complexity Tracking
 
 > No constitution violations - no tracking needed.
 
 ## Implementation Phases
 
-### Phase 1: Authentication (P1 User Story)
-1. Install Better Auth (`better-auth`, `@better-auth/react`)
-2. Create AuthProvider wrapper component
-3. Create SignIn/SignUp modal components
-4. Add User table to Postgres schema
-5. Create auth_routes.py for token validation
-6. Add auth state persistence to localStorage
+### Phase 1: BetterAuth Setup (P1-A, P1-B User Stories)
+1. Install BetterAuth (`better-auth`, `@better-auth/react`)
+2. Configure BetterAuth client with Docusaurus
+3. Create AuthProvider wrapper component with `useSession` hook
+4. Create SignIn/SignUp modal components
+5. Implement password validation (min 8 chars)
+6. Add User table to Postgres schema with email_verified field
+7. Configure session settings (expiresIn: 7 days, updateAge: 1 day)
+8. Set up cookie caching with compact encoding strategy
 
-### Phase 2: User Profiles (P1 User Story continued)
+### Phase 2: Session & Cookie Validation (P1-C, P1-D, P1-E User Stories)
+1. Implement FastAPI middleware for BetterAuth cookie validation
+2. Create shared secret configuration (BETTER_AUTH_SECRET in .env)
+3. Add session validation endpoint for protected routes
+4. Implement 401 responses for invalid/expired sessions
+5. Add session refresh logic (transparent to user)
+6. Create signout endpoint with session revocation
+
+### Phase 3: Email Verification (FR-026)
+1. Configure BetterAuth email verification flow
+2. Create email verification page/handler
+3. Add email_verified check to personalization endpoints
+4. Create "verify email" prompt component for unverified users
+5. Block personalization features until verified
+
+### Phase 4: User Profiles (P2-A, P2-B User Stories)
 1. Create UserProfile table in Postgres
 2. Create BackgroundQuestionnaire component
 3. Implement profile_service.py
 4. Add profile_routes.py endpoints
 5. Store expertise level, languages, goals
+6. Link profiles to BetterAuth user IDs
 
-### Phase 3: Content Personalization (P2 User Story)
+### Phase 5: Content Personalization (P2 User Story)
 1. Create PersonalizeButton component
 2. Implement personalization_service.py with Gemini
 3. Add caching layer for personalized content
 4. Create PersonalizedContent wrapper
 5. Add toggle between original/personalized
+6. Gate behind email verification
 
-### Phase 4: Agent Skills (P3, P4 User Stories)
+### Phase 6: Agent Skills (P3, P4 User Stories)
 1. Define skill prompt templates
 2. Create SkillsPanel component
 3. Implement code-explainer skill
@@ -177,17 +235,32 @@ src/
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Gemini rate limits during personalization | High | Cache aggressively, queue requests |
-| Better Auth learning curve | Medium | Start with email/password only |
+| BetterAuth cookie validation in Python | Medium | Use shared secret, test thoroughly |
+| Email verification delays signup | Medium | Clear messaging, resend option |
 | Personalization quality varies | Medium | Preserve code blocks, user feedback |
-| Session management complexity | Low | Use Better Auth's built-in session handling |
+| Session management complexity | Low | Use BetterAuth's built-in session handling |
+| Cookie security in development | Low | Use secure flags in prod only |
 
 ## Dependencies
 
 ```mermaid
 graph TD
-    A[Phase 1: Auth] --> B[Phase 2: Profiles]
-    B --> C[Phase 3: Personalization]
-    B --> D[Phase 4: Agent Skills]
-    C --> E[Full Feature Complete]
-    D --> E
+    A[Phase 1: BetterAuth Setup] --> B[Phase 2: Session Validation]
+    B --> C[Phase 3: Email Verification]
+    C --> D[Phase 4: User Profiles]
+    D --> E[Phase 5: Personalization]
+    D --> F[Phase 6: Agent Skills]
+    E --> G[Full Feature Complete]
+    F --> G
+```
+
+## Environment Variables (Added 2025-12-12)
+
+```bash
+# .env.example additions
+BETTER_AUTH_SECRET=your-secret-key-min-32-chars
+BETTER_AUTH_URL=http://localhost:3000
+SESSION_EXPIRES_IN=604800  # 7 days in seconds
+SESSION_UPDATE_AGE=86400   # 1 day in seconds
+EMAIL_VERIFICATION_REQUIRED=true
 ```

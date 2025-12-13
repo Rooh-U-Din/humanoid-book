@@ -10,10 +10,14 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isAuthenticated: boolean;
+  isEmailVerified: boolean;
   isProfileCompleted: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<{ message: string; email_verified: boolean }>;
+  resendVerification: () => Promise<{ message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -56,16 +60,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authClient.loadProfile();
   };
 
+  const refreshUser = async () => {
+    await authClient.loadCurrentUser();
+  };
+
+  const verifyEmail = async (token: string) => {
+    return authClient.verifyEmail(token);
+  };
+
+  const resendVerification = async () => {
+    return authClient.resendVerification();
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         profile,
         isAuthenticated: !!user,
+        isEmailVerified: !!user?.email_verified,
         isProfileCompleted: !!profile?.profile_completed,
         isLoading,
         signOut,
         refreshProfile,
+        refreshUser,
+        verifyEmail,
+        resendVerification,
       }}
     >
       {children}

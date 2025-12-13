@@ -11,6 +11,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  email_verified: boolean;
   created_at: string;
 }
 
@@ -20,6 +21,7 @@ export interface AuthResponse {
   name: string | null;
   token: string;
   profile_completed: boolean;
+  email_verified?: boolean;
 }
 
 export interface UserProfile {
@@ -136,6 +138,7 @@ class AuthClient {
       id: response.user_id,
       email: response.email,
       name: response.name,
+      email_verified: response.email_verified ?? false,
       created_at: new Date().toISOString(),
     };
 
@@ -158,6 +161,7 @@ class AuthClient {
       id: response.user_id,
       email: response.email,
       name: response.name,
+      email_verified: response.email_verified ?? false,
       created_at: new Date().toISOString(),
     };
 
@@ -249,6 +253,76 @@ class AuthClient {
 
   isProfileCompleted(): boolean {
     return !!this.profile?.profile_completed;
+  }
+
+  isEmailVerified(): boolean {
+    return !!this.user?.email_verified;
+  }
+
+  // Email verification methods (FR-026)
+  async verifyEmail(token: string): Promise<{ message: string; email_verified: boolean }> {
+    const response = await this.request<{ message: string; email_verified: boolean }>(
+      '/api/auth/verify-email',
+      {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      }
+    );
+
+    // Update user's email_verified status
+    if (this.user && response.email_verified) {
+      this.user.email_verified = true;
+      localStorage.setItem(USER_KEY, JSON.stringify(this.user));
+      this.notifyListeners();
+    }
+
+    return response;
+  }
+
+  async resendVerification(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/resend-verification', {
+      method: 'POST',
+    });
+  }
+
+  // Load current user info from /api/auth/me
+  async loadCurrentUser(): Promise<User | null> {
+    if (!this.token) return null;
+
+    try {
+      const userData = await this.request<{
+        id: string;
+        email: string;
+        name: string | null;
+        email_verified: boolean;
+        created_at: string;
+      }>('/api/auth/me');
+
+      this.user = {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        email_verified: userData.email_verified,
+        created_at: userData.created_at,
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(this.user));
+      this.notifyListeners();
+      return this.user;
+    } catch (e) {
+      console.error('Failed to load current user:', e);
+      return null;
+    }
+  }
+
+  // Password change (T069)
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
   }
 }
 

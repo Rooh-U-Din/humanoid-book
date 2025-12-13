@@ -1,8 +1,14 @@
 # Data Model: Intelligent Personalization & Authentication
 
 **Feature**: intelligent-personalization-auth
-**Date**: 2025-12-09
+**Date**: 2025-12-09 (Updated: 2025-12-12)
 **Database**: Neon Serverless Postgres
+
+## Updates (2025-12-12)
+- Added `email_verified` field to users table (FR-026)
+- Added `verification_token` and `verification_expires` fields
+- Added BetterAuth session validation notes
+- Updated validation rules for password policy (min 8 chars)
 
 ## Entity Relationship Diagram
 
@@ -18,6 +24,9 @@ erDiagram
         varchar email UK
         varchar name
         varchar password_hash
+        boolean email_verified
+        varchar verification_token
+        timestamp verification_expires
         timestamp created_at
         timestamp updated_at
     }
@@ -60,19 +69,23 @@ erDiagram
 
 ### 1. users
 
-Stores authenticated user information.
+Stores authenticated user information. Integrates with BetterAuth client-side authentication.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK, DEFAULT gen_random_uuid() | Unique identifier |
 | email | VARCHAR(255) | UNIQUE, NOT NULL | User email address |
 | name | VARCHAR(255) | | Display name |
-| password_hash | VARCHAR(255) | NOT NULL | Bcrypt hashed password |
+| password_hash | VARCHAR(255) | NOT NULL | Bcrypt hashed password (min 8 chars) |
+| email_verified | BOOLEAN | DEFAULT FALSE | Whether email is verified (FR-026) |
+| verification_token | VARCHAR(255) | | Token for email verification |
+| verification_expires | TIMESTAMP WITH TIME ZONE | | Token expiration time |
 | created_at | TIMESTAMP WITH TIME ZONE | DEFAULT NOW() | Account creation time |
 | updated_at | TIMESTAMP WITH TIME ZONE | DEFAULT NOW() | Last update time |
 
 **Indexes**:
 - `idx_users_email` on `email` (for login lookups)
+- `idx_users_verification_token` on `verification_token` (for verification lookups)
 
 **SQLAlchemy Model**:
 ```python
@@ -83,12 +96,17 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
     password_hash = Column(String(255), nullable=False)
+    email_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), index=True)
+    verification_expires = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     profile = relationship("UserProfile", back_populates="user", uselist=False)
 ```
+
+**BetterAuth Session Note**: BetterAuth manages sessions client-side using signed cookies. FastAPI validates these cookies using a shared secret (BETTER_AUTH_SECRET). Session data includes user ID and emailVerified status.
 
 ---
 
@@ -371,9 +389,24 @@ CREATE INDEX IF NOT EXISTS idx_skill_invocations_created ON skill_invocations(cr
 | Entity | Field | Rule |
 |--------|-------|------|
 | User | email | Valid email format, max 255 chars |
-| User | password | Min 8 chars, stored as bcrypt hash |
+| User | password | Min 8 chars, no complexity (FR-025), stored as bcrypt hash |
+| User | email_verified | Must be true to access personalization (FR-026) |
 | UserProfile | expertise_level | Must be: beginner, intermediate, expert |
 | UserProfile | programming_languages | Max 20 items, each max 50 chars |
 | PersonalizedContent | chapter_id | Alphanumeric with dashes, max 100 chars |
 | PersonalizedContent | profile_hash | Exactly 16 hex characters |
 | SkillInvocation | skill_id | Must exist in skill registry |
+
+## Migration Script Updates (2025-12-12)
+
+```sql
+-- Migration: 002_add_email_verification.sql
+
+-- Add email verification columns to users table
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255),
+ADD COLUMN IF NOT EXISTS verification_expires TIMESTAMP WITH TIME ZONE;
+
+CREATE INDEX IF NOT EXISTS idx_users_verification_token ON users(verification_token);
+```

@@ -1,0 +1,497 @@
+openapi: 3.0.3
+info:
+  title: BetterAuth Access Control API
+  description: |
+    Authentication and access control API for the Physical AI Book.
+    Integrates BetterAuth authentication with FastAPI backend.
+  version: 1.0.0
+  contact:
+    name: Physical AI Book Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.physicalaibook.com
+    description: Production
+
+tags:
+  - name: auth
+    description: Authentication endpoints (signup, signin, signout)
+  - name: session
+    description: Session management endpoints
+  - name: profile
+    description: User profile and questionnaire endpoints
+
+paths:
+  # ============================================
+  # Authentication Endpoints
+  # ============================================
+  /api/auth/signup:
+    post:
+      tags: [auth]
+      operationId: signUp
+      summary: Create new user account
+      description: |
+        Register a new user with email and password.
+        Returns session token on success.
+        Requirement: FR-002, FR-006, FR-007, FR-008
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+        '400':
+          description: Validation error (invalid email, weak password)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already registered (generic message for security)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/signin:
+    post:
+      tags: [auth]
+      operationId: signIn
+      summary: Authenticate existing user
+      description: |
+        Sign in with email and password.
+        Returns session token on success.
+        Requirement: FR-003, FR-009
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+        '401':
+          description: Invalid credentials (generic message)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/signout:
+    post:
+      tags: [auth]
+      operationId: signOut
+      summary: Sign out current user
+      description: |
+        Invalidate the current session.
+        Requirement: FR-010
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Successfully signed out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully signed out"
+          headers:
+            Set-Cookie:
+              description: Cleared session cookie
+              schema:
+                type: string
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # Session Endpoints
+  # ============================================
+  /api/auth/session:
+    get:
+      tags: [session]
+      operationId: getSession
+      summary: Get current session info
+      description: |
+        Returns current user and session information.
+        Used by frontend to check authentication state.
+        Requirement: FR-004, FR-005
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Session is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/me:
+    get:
+      tags: [session]
+      operationId: getCurrentUser
+      summary: Get current user details
+      description: |
+        Returns full user profile for authenticated user.
+        Requirement: FR-016, FR-017
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # Profile Endpoints
+  # ============================================
+  /api/profile:
+    get:
+      tags: [profile]
+      operationId: getProfile
+      summary: Get user profile
+      description: |
+        Returns the user's profile including questionnaire responses.
+        Requirement: FR-020
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found (user hasn't completed questionnaire)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [profile]
+      operationId: updateProfile
+      summary: Update user profile
+      description: |
+        Update user profile preferences.
+        Requirement: FR-020
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profile/questionnaire:
+    post:
+      tags: [profile]
+      operationId: submitQuestionnaire
+      summary: Submit background questionnaire
+      description: |
+        Submit responses to background questions after signup.
+        Creates or updates user profile.
+        Requirement: FR-018, FR-019, FR-020
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionnaireRequest'
+      responses:
+        '200':
+          description: Questionnaire submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profile/questionnaire/skip:
+    post:
+      tags: [profile]
+      operationId: skipQuestionnaire
+      summary: Skip background questionnaire
+      description: |
+        Mark questionnaire as skipped, allowing content access.
+        Requirement: FR-019
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Questionnaire skipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Questionnaire skipped"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# ============================================
+# Components
+# ============================================
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: BetterAuth session cookie
+
+  schemas:
+    # Request schemas
+    SignUpRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          example: "securepassword123"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "John Doe"
+
+    SignInRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "securepassword123"
+        rememberMe:
+          type: boolean
+          default: true
+          description: Keep session active longer
+
+    QuestionnaireRequest:
+      type: object
+      required:
+        - expertise_level
+      properties:
+        expertise_level:
+          type: string
+          enum: [beginner, intermediate, expert]
+          example: "intermediate"
+        programming_languages:
+          type: array
+          items:
+            type: string
+          example: ["Python", "JavaScript", "C++"]
+        learning_goals:
+          type: array
+          items:
+            type: string
+          example: ["Build robots", "Understand AI", "Learn ROS2"]
+        additional_responses:
+          type: object
+          additionalProperties: true
+          description: Any additional questionnaire responses
+
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        expertise_level:
+          type: string
+          enum: [beginner, intermediate, expert]
+        programming_languages:
+          type: array
+          items:
+            type: string
+        learning_goals:
+          type: array
+          items:
+            type: string
+
+    # Response schemas
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        session:
+          $ref: '#/components/schemas/SessionInfo'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        email_verified:
+          type: boolean
+        image:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    SessionInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        expires_at:
+          type: string
+          format: date-time
+
+    SessionResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        session:
+          $ref: '#/components/schemas/SessionInfo'
+
+    UserProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        expertise_level:
+          type: string
+          enum: [beginner, intermediate, expert]
+          nullable: true
+        programming_languages:
+          type: array
+          items:
+            type: string
+        learning_goals:
+          type: array
+          items:
+            type: string
+        questionnaire_completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          example: "Invalid credentials"
+        details:
+          type: object
+          additionalProperties: true

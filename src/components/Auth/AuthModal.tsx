@@ -1,10 +1,12 @@
 /**
  * Auth Modal Component
  * Handles Sign In and Sign Up with tabs
+ * Shows questionnaire after successful signup (FR-020)
  */
 
 import React, { useState } from 'react';
 import { authClient } from '../auth-client';
+import { QuestionnaireModal } from './QuestionnaireModal';
 import styles from './AuthModal.module.css';
 
 interface AuthModalProps {
@@ -21,8 +23,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultTab = 'signin' }:
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen && !showQuestionnaire) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,22 +35,29 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultTab = 'signin' }:
     try {
       if (activeTab === 'signup') {
         await authClient.signUp({ email, password, name: name || undefined });
+        // Show questionnaire after successful signup (FR-020)
+        setShowQuestionnaire(true);
       } else {
         await authClient.signIn({ email, password });
+        onSuccess?.();
+        onClose();
       }
 
       // Clear form
       setEmail('');
       setPassword('');
       setName('');
-
-      onSuccess?.();
-      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuestionnaireClose = () => {
+    setShowQuestionnaire(false);
+    onSuccess?.();
+    onClose();
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -142,6 +152,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultTab = 'signin' }:
           )}
         </p>
       </div>
+
+      {/* Questionnaire shown after successful signup (FR-020) */}
+      <QuestionnaireModal
+        isOpen={showQuestionnaire}
+        onClose={handleQuestionnaireClose}
+      />
     </div>
   );
 }
