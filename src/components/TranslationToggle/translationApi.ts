@@ -5,7 +5,7 @@
  */
 
 // Backend API URL - Railway production backend
-const API_BASE_URL = 'https://backend-book-production-4d5a.up.railway.app';
+const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
 
 export interface TranslateRequest {
   chapterId: string;

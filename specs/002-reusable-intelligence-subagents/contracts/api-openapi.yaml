@@ -9,7 +9,7 @@ info:
     name: Physical AI Book Team
 
 servers:
-  - url: https://backend-book-production.up.railway.app
+  - url: https://backend-book-production-1279.up.railway.app
     description: Production server
   - url: http://localhost:8000
     description: Local development

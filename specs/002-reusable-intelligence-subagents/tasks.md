@@ -38,7 +38,7 @@
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [x] T005 Create database migration script backend/src/migrations/003_add_subagent_fields.py with trace_id, status, context, error_message columns
-- [ ] T006 Run database migration against Neon Postgres
+- [x] T006 Run database migration against Neon Postgres
 - [x] T007 Extend SkillInvocation SQLAlchemy model in backend/src/models/database.py with new fields (trace_id, status, context, error_message)
 - [x] T008 Create BaseSkill abstract class in backend/src/services/skills/base.py with skill_id, name, description, version properties and execute() method
 - [x] T009 Create AgentContext dataclass in backend/src/services/skills/base.py with user_id, user_email, chapter_id, selected_text, user_profile, trace_id, timestamp

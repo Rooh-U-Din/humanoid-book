@@ -6,7 +6,7 @@
  */
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://backend-book-production.up.railway.app'
+  ? 'https://backend-book-production-1279.up.railway.app'
   : 'http://localhost:8000';
 
 /**
