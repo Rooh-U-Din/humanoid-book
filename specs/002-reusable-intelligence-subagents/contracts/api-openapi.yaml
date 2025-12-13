@@ -1,0 +1,414 @@
+openapi: 3.0.3
+info:
+  title: Reusable Intelligence Subagents API
+  description: |
+    API for invoking AI-powered skills within the Physical AI Book.
+    All endpoints require BetterAuth authentication.
+  version: 1.0.0
+  contact:
+    name: Physical AI Book Team
+
+servers:
+  - url: https://backend-book-production.up.railway.app
+    description: Production server
+  - url: http://localhost:8000
+    description: Local development
+
+tags:
+  - name: Skills
+    description: Skill invocation and management endpoints
+
+paths:
+  /api/skills/invoke:
+    post:
+      summary: Invoke a skill
+      description: |
+        Invokes a specific skill with provided input and context.
+        Requires authentication. Returns generated content.
+      operationId: invokeSkill
+      tags:
+        - Skills
+      security:
+        - BetterAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillInvokeRequest'
+            examples:
+              explain:
+                summary: Code explanation request
+                value:
+                  skill_id: "explain"
+                  input:
+                    selected_text: "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)"
+                    chapter_id: "python-basics"
+              translate:
+                summary: Translation request
+                value:
+                  skill_id: "translate"
+                  input:
+                    selected_text: "ROS 2 uses a publish-subscribe pattern for inter-node communication."
+              debug:
+                summary: Debug assistance request
+                value:
+                  skill_id: "debug"
+                  input:
+                    code_or_error: "TypeError: 'NoneType' object is not subscriptable"
+                    chapter_id: "error-handling"
+      responses:
+        '200':
+          description: Skill executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillInvokeResponse'
+        '400':
+          description: Invalid request (missing required fields, invalid skill_id)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Skill not found or disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/skills:
+    get:
+      summary: List available skills
+      description: Returns all enabled skills with their metadata
+      operationId: listSkills
+      tags:
+        - Skills
+      security:
+        - BetterAuthCookie: []
+      responses:
+        '200':
+          description: List of available skills
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillListResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/skills/history:
+    get:
+      summary: Get user's skill invocation history
+      description: Returns recent skill invocations for the authenticated user
+      operationId: getSkillHistory
+      tags:
+        - Skills
+      security:
+        - BetterAuthCookie: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Maximum number of records to return
+        - name: skill_id
+          in: query
+          schema:
+            type: string
+          description: Filter by skill type
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Pagination offset
+      responses:
+        '200':
+          description: Skill invocation history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillHistoryResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/skills/{trace_id}:
+    get:
+      summary: Get skill invocation details
+      description: Returns details of a specific skill invocation by trace ID
+      operationId: getSkillInvocation
+      tags:
+        - Skills
+      security:
+        - BetterAuthCookie: []
+      parameters:
+        - name: trace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Trace ID of the invocation
+      responses:
+        '200':
+          description: Skill invocation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillInvocationDetail'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Invocation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BetterAuthCookie:
+      type: apiKey
+      in: cookie
+      name: better-auth.session
+      description: BetterAuth session cookie
+
+  schemas:
+    SkillInvokeRequest:
+      type: object
+      required:
+        - skill_id
+        - input
+      properties:
+        skill_id:
+          type: string
+          enum: [explain, translate, debug, navigate, personalize]
+          description: Identifier of the skill to invoke
+        input:
+          type: object
+          description: Skill-specific input parameters
+          properties:
+            selected_text:
+              type: string
+              maxLength: 25000
+              description: User-selected text content
+            code_or_error:
+              type: string
+              maxLength: 10000
+              description: Code or error message for debug skill
+            chapter_id:
+              type: string
+              description: Current chapter identifier
+            topic:
+              type: string
+              description: Topic for navigation skill
+            preserve_terms:
+              type: array
+              items:
+                type: string
+              description: Technical terms to preserve in translation
+
+    SkillInvokeResponse:
+      type: object
+      required:
+        - skill_id
+        - trace_id
+        - result
+        - latency_ms
+        - timestamp
+      properties:
+        skill_id:
+          type: string
+          description: Which skill was invoked
+        trace_id:
+          type: string
+          format: uuid
+          description: Unique trace ID for debugging
+        result:
+          $ref: '#/components/schemas/SkillResult'
+        latency_ms:
+          type: integer
+          description: Processing time in milliseconds
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+
+    SkillResult:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Generated content/explanation
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+          description: Related content references
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
+          description: Follow-up action suggestions
+
+    Citation:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+        chapter_title:
+          type: string
+        section_title:
+          type: string
+        url:
+          type: string
+          format: uri
+
+    Suggestion:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [skill, chapter, topic]
+        skill_id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+
+    SkillListResponse:
+      type: object
+      required:
+        - skills
+      properties:
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillInfo'
+
+    SkillInfo:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - version
+        - enabled
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        enabled:
+          type: boolean
+        input_schema:
+          type: object
+          description: JSON schema for input validation
+
+    SkillHistoryResponse:
+      type: object
+      required:
+        - invocations
+        - total
+      properties:
+        invocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillInvocationSummary'
+        total:
+          type: integer
+          description: Total number of invocations
+        offset:
+          type: integer
+        limit:
+          type: integer
+
+    SkillInvocationSummary:
+      type: object
+      properties:
+        trace_id:
+          type: string
+          format: uuid
+        skill_id:
+          type: string
+        status:
+          type: string
+          enum: [success, error, timeout, rate_limited]
+        latency_ms:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    SkillInvocationDetail:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SkillInvocationSummary'
+        - type: object
+          properties:
+            input_preview:
+              type: string
+              description: Truncated input (first 500 chars)
+            output_preview:
+              type: string
+              description: Truncated output (first 500 chars)
+            context:
+              type: object
+              description: Context snapshot at invocation time
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message
+        error_code:
+          type: string
+          description: Machine-readable error code
+        trace_id:
+          type: string
+          format: uuid
+          description: Trace ID for debugging (if available)
