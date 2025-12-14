@@ -4,10 +4,8 @@
  * Handles communication with the translation backend.
  */
 
-// Backend API URL - Uses production URL when not on localhost
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://backend-book-production-1279.up.railway.app'
-  : 'http://localhost:8000';
+// Backend API URL - Railway backend
+const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
 
 export interface TranslateRequest {
   chapterId: string;

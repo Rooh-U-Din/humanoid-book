@@ -11,10 +11,8 @@ import styles from './GlobalTranslation.module.css';
 
 type Language = 'english' | 'urdu';
 
-// API Configuration - Uses production URL when not on localhost
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://backend-book-production-1279.up.railway.app'
-  : 'http://localhost:8000';
+// API Configuration - Railway backend
+const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
 
 // Storage keys
 const STORAGE_PREFIX = 'global_translation_';

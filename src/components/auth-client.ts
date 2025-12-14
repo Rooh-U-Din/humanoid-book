@@ -3,10 +3,8 @@
  * Handles JWT-based auth with the FastAPI backend
  */
 
-// API Configuration - Uses environment variable or defaults to localhost
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://backend-book-production-1279.up.railway.app'
-  : 'http://localhost:8000';
+// API Configuration - Railway backend
+const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
 
 // Types
 export interface User {
