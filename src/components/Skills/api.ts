@@ -5,7 +5,8 @@
  * All requests include credentials for BetterAuth cookie authentication.
  */
 
-const API_BASE_URL = process.env.NODE_ENV === 'production'
+// Backend API URL - Uses production URL when not on localhost
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? 'https://backend-book-production-1279.up.railway.app'
   : 'http://localhost:8000';
 

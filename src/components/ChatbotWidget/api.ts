@@ -26,8 +26,10 @@ export interface QueryResponse {
   timestamp: string;
 }
 
-// Backend API URL - Railway production backend
-const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
+// Backend API URL - Uses production URL when not on localhost
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'https://backend-book-production-1279.up.railway.app'
+  : 'http://localhost:8000';
 
 // Demo mode responses when API is unavailable
 const DEMO_RESPONSES: Record<string, string> = {
