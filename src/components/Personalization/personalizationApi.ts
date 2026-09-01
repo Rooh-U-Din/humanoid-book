@@ -5,7 +5,7 @@
 import { authClient } from '../auth-client';
 
 // Backend API URL - Railway backend
-const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
+const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
 
 export interface PersonalizeRequest {
   chapter_id: string;

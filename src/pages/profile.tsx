@@ -8,7 +8,7 @@ import Layout from '@theme/Layout';
 import { useAuth } from '../components/Auth/AuthContext';
 import { authClient } from '../components/auth-client';
 import { QuestionnaireModal } from '../components/Auth/QuestionnaireModal';
-import { VerifyEmailPrompt } from '../components/Auth/VerifyEmailPrompt';
+
 import styles from './profile.module.css';
 
 export default function ProfilePage(): JSX.Element {
@@ -60,13 +60,6 @@ export default function ProfilePage(): JSX.Element {
           <h1>Your Profile</h1>
           <p>Manage your account and learning preferences</p>
         </div>
-
-        {!isEmailVerified && (
-          <VerifyEmailPrompt
-            message="Verify your email to access personalization features."
-            variant="banner"
-          />
-        )}
 
         <div className={styles.grid}>
           {/* Account Info Card */}

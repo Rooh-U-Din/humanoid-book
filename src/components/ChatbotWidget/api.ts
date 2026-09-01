@@ -27,7 +27,7 @@ export interface QueryResponse {
 }
 
 // Backend API URL - Railway backend
-const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
+const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
 
 // Demo mode responses when API is unavailable
 const DEMO_RESPONSES: Record<string, string> = {

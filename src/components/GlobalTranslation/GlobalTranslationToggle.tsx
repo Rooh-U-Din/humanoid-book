@@ -12,7 +12,7 @@ import styles from './GlobalTranslation.module.css';
 type Language = 'english' | 'urdu';
 
 // API Configuration - Railway backend
-const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
+const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
 
 // Storage keys
 const STORAGE_PREFIX = 'global_translation_';

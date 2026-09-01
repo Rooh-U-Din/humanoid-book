@@ -6,7 +6,7 @@
  */
 
 // Backend API URL - Railway backend
-const API_BASE_URL = 'https://backend-book-production-1279.up.railway.app';
+const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
 
 /**
  * Error thrown when authentication is required or session is invalid.
