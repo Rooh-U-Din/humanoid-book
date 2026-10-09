@@ -26,9 +26,7 @@ export interface QueryResponse {
   timestamp: string;
 }
 
-// Backend API URL - defaults to production Render backend
-const API_BASE_URL =
-  process.env.DOCUSAURUS_BACKEND_URL || 'https://backend-book-vtha.onrender.com';
+import { API_BASE_URL } from '../../lib/apiConfig';
 
 // Demo mode responses when API is unavailable
 const DEMO_RESPONSES: Record<string, string> = {
