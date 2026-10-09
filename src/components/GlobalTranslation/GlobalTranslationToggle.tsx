@@ -11,8 +11,9 @@ import styles from './GlobalTranslation.module.css';
 
 type Language = 'english' | 'urdu';
 
-// API Configuration - Railway backend
-const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
+// API Configuration - defaults to production Render backend
+const API_BASE_URL =
+  process.env.DOCUSAURUS_BACKEND_URL || 'https://backend-book-vtha.onrender.com';
 
 // Storage keys
 const STORAGE_PREFIX = 'global_translation_';

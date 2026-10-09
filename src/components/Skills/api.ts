@@ -5,8 +5,9 @@
  * All requests include credentials for BetterAuth cookie authentication.
  */
 
-// Backend API URL - Railway backend
-const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
+// Backend API URL - defaults to production Render backend
+const API_BASE_URL =
+  process.env.DOCUSAURUS_BACKEND_URL || 'https://backend-book-vtha.onrender.com';
 
 /**
  * Error thrown when authentication is required or session is invalid.

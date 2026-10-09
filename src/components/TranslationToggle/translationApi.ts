@@ -4,8 +4,9 @@
  * Handles communication with the translation backend.
  */
 
-// Backend API URL - Railway backend
-const API_BASE_URL = 'https://backend-book-vtha.onrender.com';
+// Backend API URL - defaults to production Render backend
+const API_BASE_URL =
+  process.env.DOCUSAURUS_BACKEND_URL || 'https://backend-book-vtha.onrender.com';
 
 export interface TranslateRequest {
   chapterId: string;

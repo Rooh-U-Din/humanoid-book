@@ -2,16 +2,42 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+const isVercel = process.env.VERCEL === '1';
+const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+
+// Determine site URL:
+// 1. Explicit SITE_URL environment variable (e.g. custom domain)
+// 2. Vercel production/preview URL
+// 3. GitHub Pages URL fallback
+const siteUrl = process.env.SITE_URL
+  ? process.env.SITE_URL
+  : isVercel
+    ? process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'https://humanoid-book.vercel.app'
+    : 'https://rooh-u-din.github.io';
+
+// Base URL:
+// 1. Explicit BASE_URL environment variable
+// 2. GitHub Actions (GitHub Pages subpath) -> '/humanoid-book/'
+// 3. Vercel / local development -> '/'
+const baseUrl = process.env.BASE_URL || (isGitHubActions ? '/humanoid-book/' : '/');
+
 const config: Config = {
   title: 'Physical AI & Humanoid Robotics',
   tagline: 'Learn AI-Native Software Engineering for Humanoid Robots',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/logo.png',
 
   // Set the production url of your site here
-  url: 'https://rooh-u-din.github.io',
+  url: siteUrl,
   // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/humanoid-book/',
+  baseUrl: baseUrl,
+
+  customFields: {
+    backendUrl: process.env.DOCUSAURUS_BACKEND_URL || 'https://backend-book-vtha.onrender.com',
+  },
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -58,7 +84,7 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/logo.png',
     navbar: {
       title: 'Physical AI & Humanoid Robotics',
       logo: {
