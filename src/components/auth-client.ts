@@ -71,24 +71,28 @@ class AuthClient {
   constructor() {
     // Load from localStorage on init
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem(TOKEN_KEY);
-      const userJson = localStorage.getItem(USER_KEY);
-      const profileJson = localStorage.getItem(PROFILE_KEY);
+      try {
+        this.token = localStorage.getItem(TOKEN_KEY);
+        const userJson = localStorage.getItem(USER_KEY);
+        const profileJson = localStorage.getItem(PROFILE_KEY);
 
-      if (userJson) {
-        try {
-          this.user = JSON.parse(userJson);
-        } catch (e) {
-          console.error('Failed to parse user from storage');
+        if (userJson) {
+          try {
+            this.user = JSON.parse(userJson);
+          } catch (e) {
+            console.error('Failed to parse user from storage');
+          }
         }
-      }
 
-      if (profileJson) {
-        try {
-          this.profile = JSON.parse(profileJson);
-        } catch (e) {
-          console.error('Failed to parse profile from storage');
+        if (profileJson) {
+          try {
+            this.profile = JSON.parse(profileJson);
+          } catch (e) {
+            console.error('Failed to parse profile from storage');
+          }
         }
+      } catch (err) {
+        console.warn('Could not access localStorage on authClient init:', err);
       }
     }
   }

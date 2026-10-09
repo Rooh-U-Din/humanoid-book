@@ -41,10 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Initial profile load if authenticated
     const initAuth = async () => {
-      if (authClient.isAuthenticated()) {
-        await authClient.loadProfile();
+      try {
+        if (authClient.isAuthenticated()) {
+          await authClient.loadProfile();
+        }
+      } catch (err) {
+        console.warn('Failed to load user profile on init:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();
@@ -93,10 +98,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  profile: null,
+  isAuthenticated: false,
+  isEmailVerified: false,
+  isProfileCompleted: false,
+  isLoading: false,
+  signOut: async () => {},
+  refreshProfile: async () => {},
+  refreshUser: async () => {},
+  verifyEmail: async () => ({ message: '', email_verified: false }),
+  resendVerification: async () => ({ message: '' }),
+};
+
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    return defaultAuthContext;
   }
   return context;
 }
